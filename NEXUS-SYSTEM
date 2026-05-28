@@ -1,0 +1,797 @@
+--[[ NEXUS-SYSTEM – симметричные мягкие углы ]]
+if game.CoreGui:FindFirstChild("NEXUS") then
+	game:GetService("StarterGui"):SetCore("SendNotification", {Title = "NEXUS-SYSTEM",Text = "GUI Already loaded, rejoin to re-execute",Duration = 5})
+	return
+end
+
+-- VARIABLES (без изменений)
+_G.AntiFlingToggled = false
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Light = game:GetService("Lighting")
+local HttpService = game:GetService("HttpService")
+local httprequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+local mouse = plr:GetMouse()
+local ScriptWhitelist = {}
+local ForceWhitelist = {}
+local TargetedPlayer = nil
+local PotionTool = nil
+local SavedCheckpoint = nil
+local MinesFolder = nil
+local FreeEmotesEnabled = false
+local CannonsFolders = {}
+
+pcall(function()
+	MinesFolder = game:GetService("Workspace").Landmines
+	for i,v in pairs(game:GetService("Workspace"):GetChildren()) do
+		if v.Name == "Cannons" then table.insert(CannonsFolders, v) end
+	end
+end)
+
+-- Локализация (полная, как раньше)
+local lang = "EN"
+local L = {
+	EN = {
+		home = "🏠 Home", game = "🎮 Game", target = "🎯 Target", misc = "⚙️ Misc", lang = "🌐 Language",
+		title = "⚡ NEXUS-SYSTEM ⚡", welcome = "¡Hello @"..plr.Name.."!\nPress [B] to open/close gui.",
+		anti_ragdoll = "🔄 Anti ragdoll", push_aura = "💨 Push aura", spam_mines = "💣 Spam mines",
+		potion_fling = "🧪 Potion Fling", touch_fling = "👻 Touch fling", potion_dick = "🍆 Potion dick",
+		void_protection = "🛡️ Void protection", push_all = "🤜 Push all", break_cannons = "💥 Break Cannons",
+		lethal_cannons = "☠️ Lethal Cannons", chat_alert = "💬 Chat alert", modded_push = "🔫 Modded push",
+		cmd_bar = "⌨️ CMD BAR...",
+		target_view = "👁️ View", target_unview = "👁️ Unview", target_fling = "💥 Fling",
+		target_focus = "🎯 Focus", target_bang = "💢 Bang", target_headsit = "🪑 Headsit",
+		target_stand = "🧍 Stand", target_backpack = "🎒 Backpack", target_doggy = "🐕 Doggy",
+		target_drag = "🖐️ Drag", target_push = "📨 Push", target_whitelist = "⭐ Whitelist",
+		target_teleport = "🌌 Teleport", target_placeholder = "@target...",
+		userid_label = "UserID: \nDisplay: \nJoined: ",
+		misc_anti_fling = "🛡️ Anti fling", misc_anti_chat = "🤫 Anti chat spy", misc_anti_afk = "⏰ Anti AFK",
+		misc_shaders = "🎨 Shaders", misc_day = "☀️ Day", misc_night = "🌙 Night", misc_rejoin = "🔄 Rejoin",
+		misc_cmdx = "💻 CMDX", misc_infyield = "∞ Inf Yield", misc_serverhop = "🌍 Server hop",
+		misc_explode = "💥 Explode", misc_emotes = "😀 Free emotes",
+		lang_en = "🇬🇧 English", lang_ru = "🇷🇺 Русский",
+		notification_loaded = "Loaded successfully", notification_executed = "Executed ",
+		notification_whitelist_remove = " removed from whitelist.", notification_whitelist_add = " added to whitelist.",
+		notification_emotes = "Loading free emotes.\nCredits: Gi#7331",
+		notification_target_cant = "You can't target this player: ",
+		tp_cannon1 = "📍 Cannon 1", tp_cannon2 = "📍 Cannon 2", tp_cannon3 = "📍 Cannon 3",
+		tp_minefield = "💣 Minefield", tp_ballon = "🎈 Ballon", tp_stairs = "🪜 Stairs",
+		tp_moving_stairs = "🏃 Moving Stairs", tp_spiral_stairs = "🌀 Spiral Stairs",
+		tp_skyscraper = "🏢 Skyscraper", tp_pool = "🏊 Pool",
+	},
+	RU = {
+		home = "🏠 Главная", game = "🎮 Игра", target = "🎯 Цели", misc = "⚙️ Прочее", lang = "🌐 Язык",
+		title = "⚡ NEXUS-SYSTEM ⚡", welcome = "¡Привет @"..plr.Name.."!\nНажми [B] чтобы открыть/закрыть меню.",
+		anti_ragdoll = "🔄 Анти рэгдолл", push_aura = "💨 Пуш-аура", spam_mines = "💣 Спам мин",
+		potion_fling = "🧪 Зелье флинг", touch_fling = "👻 Тач флинг", potion_dick = "🍆 Зелье-дик",
+		void_protection = "🛡️ Защита от войда", push_all = "🤜 Пуш всех", break_cannons = "💥 Сломать пушки",
+		lethal_cannons = "☠️ Убийственные пушки", chat_alert = "💬 Чат-оповещение", modded_push = "🔫 Мод-пуш",
+		cmd_bar = "⌨️ КОМАНДНАЯ СТРОКА...",
+		target_view = "👁️ Смотреть", target_unview = "👁️ Не смотреть", target_fling = "💥 Флинг",
+		target_focus = "🎯 Фокус", target_bang = "💢 Бэнг", target_headsit = "🪑 На голову",
+		target_stand = "🧍 Стоять", target_backpack = "🎒 Рюкзак", target_doggy = "🐕 Собачка",
+		target_drag = "🖐️ Тянуть", target_push = "📨 Толкнуть", target_whitelist = "⭐ Белый список",
+		target_teleport = "🌌 Телепорт", target_placeholder = "@target...",
+		userid_label = "UserID: \nОтображаемое: \nВ игре с: ",
+		misc_anti_fling = "🛡️ Анти флинг", misc_anti_chat = "🤫 Анти чат-шпион", misc_anti_afk = "⏰ Анти АФК",
+		misc_shaders = "🎨 Шейдеры", misc_day = "☀️ День", misc_night = "🌙 Ночь", misc_rejoin = "🔄 Перезайти",
+		misc_cmdx = "💻 CMDX", misc_infyield = "∞ Inf Yield", misc_serverhop = "🌍 Смена сервера",
+		misc_explode = "💥 Взрыв", misc_emotes = "😀 Бесплатные эмоции",
+		lang_en = "🇬🇧 Английский", lang_ru = "🇷🇺 Русский",
+		notification_loaded = "Успешно загружено", notification_executed = "Выполнено ",
+		notification_whitelist_remove = " удалён из белого списка.", notification_whitelist_add = " добавлен в белый список.",
+		notification_emotes = "Загрузка бесплатных эмоций.\nАвтор: Gi#7331",
+		notification_target_cant = "Нельзя выбрать этого игрока: ",
+		tp_cannon1 = "📍 Пушка 1", tp_cannon2 = "📍 Пушка 2", tp_cannon3 = "📍 Пушка 3",
+		tp_minefield = "💣 Минное поле", tp_ballon = "🎈 Шар", tp_stairs = "🪜 Лестница",
+		tp_moving_stairs = "🏃 Движущаяся лестница", tp_spiral_stairs = "🌀 Винтовая лестница",
+		tp_skyscraper = "🏢 Небоскрёб", tp_pool = "🏊 Бассейн",
+	}
+}
+local function T(key) return L[lang][key] or key end
+
+-- FUNCTIONS (без изменений)
+_G.shield = function(id) if not table.find(ForceWhitelist,id) then table.insert(ForceWhitelist, id) end end
+local function RandomChar() local length = math.random(1,5); local array = {}; for i=1,length do array[i]=string.char(math.random(32,126)) end; return table.concat(array) end
+local function GetPing() return (game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())/1000 end
+local function GetPlayer(UserDisplay) if UserDisplay ~= "" then for i,v in pairs(Players:GetPlayers()) do if v.Name:lower():match(UserDisplay) or v.DisplayName:lower():match(UserDisplay) then return v end end end; return nil end
+local function GetCharacter(Player) if Player.Character then return Player.Character end end
+local function GetRoot(Player) if GetCharacter(Player):FindFirstChild("HumanoidRootPart") then return GetCharacter(Player).HumanoidRootPart end end
+local function TeleportTO(posX,posY,posZ,player,method) pcall(function() if method == "safe" then task.spawn(function() for i=1,30 do task.wait(); GetRoot(plr).Velocity = Vector3.new(0,0,0); if player == "pos" then GetRoot(plr).CFrame = CFrame.new(posX,posY,posZ) else GetRoot(plr).CFrame = CFrame.new(GetRoot(player).Position)+Vector3.new(0,2,0) end end end) else GetRoot(plr).Velocity = Vector3.new(0,0,0); if player == "pos" then GetRoot(plr).CFrame = CFrame.new(posX,posY,posZ) else GetRoot(plr).CFrame = CFrame.new(GetRoot(player).Position)+Vector3.new(0,2,0) end end end) end
+local function PredictionTP(player,method) local root = GetRoot(player); local pos = root.Position; local vel = root.Velocity; GetRoot(plr).CFrame = CFrame.new((pos.X)+(vel.X)*(GetPing()*3.5),(pos.Y)+(vel.Y)*(GetPing()*2),(pos.Z)+(vel.Z)*(GetPing()*3.5)); if method == "safe" then task.wait(); GetRoot(plr).CFrame = CFrame.new(pos); task.wait(); GetRoot(plr).CFrame = CFrame.new((pos.X)+(vel.X)*(GetPing()*3.5),(pos.Y)+(vel.Y)*(GetPing()*2),(pos.Z)+(vel.Z)*(GetPing()*3.5)) end end
+local function Touch(x,root) pcall(function() x = x:FindFirstAncestorWhichIsA("Part"); if x then if firetouchinterest then task.spawn(function() firetouchinterest(x, root, 1); task.wait(); firetouchinterest(x, root, 0) end) end end end) end
+local function GetPush() local TempPush = nil; pcall(function() if plr.Backpack:FindFirstChild("Push") then PushTool = plr.Backpack.Push; PushTool.Parent = plr.Character; TempPush = PushTool end; for i,v in pairs(Players:GetPlayers()) do if v.Character:FindFirstChild("Push") then TempPush = v.Character.Push end end end); return TempPush end
+local function CheckPotion() if plr.Backpack:FindFirstChild("potion") then PotionTool = plr.Backpack:FindFirstChild("potion"); return true elseif plr.Character:FindFirstChild("potion") then PotionTool = plr.Character:FindFirstChild("potion"); return true else return false end end
+local function Push(Target) local Push = GetPush(); local FixTool = nil; if Push ~= nil then local args = {[1] = Target.Character}; GetPush().PushTool:FireServer(unpack(args)) end; if plr.Character:FindFirstChild("Push") then plr.Character.Push.Parent = plr.Backpack end; if plr.Character:FindFirstChild("ModdedPush") then FixTool = plr.Character:FindFirstChild("ModdedPush"); FixTool.Parent = plr.Backpack; FixTool.Parent = plr.Character end; if plr.Character:FindFirstChild("ClickTarget") then FixTool = plr.Character:FindFirstChild("ClickTarget"); FixTool.Parent = plr.Backpack; FixTool.Parent = plr.Character end; if plr.Character:FindFirstChild("potion") then FixTool = plr.Character:FindFirstChild("potion"); FixTool.Parent = plr.Backpack; FixTool.Parent = plr.Character end end
+local function ToggleRagdoll(bool) pcall(function() plr.Character["Falling down"].Disabled = bool; plr.Character["Swimming"].Disabled = bool; plr.Character["StartRagdoll"].Disabled = bool; plr.Character["Pushed"].Disabled = bool; plr.Character["RagdollMe"].Disabled = bool end) end
+local function ToggleVoidProtection(bool) if bool then game.Workspace.FallenPartsDestroyHeight = 0/0 else game.Workspace.FallenPartsDestroyHeight = -500 end end
+local function PlayAnim(id,time,speed) pcall(function() plr.Character.Animate.Disabled = false; local hum = plr.Character.Humanoid; local animtrack = hum:GetPlayingAnimationTracks(); for i,track in pairs(animtrack) do track:Stop() end; plr.Character.Animate.Disabled = true; local Anim = Instance.new("Animation"); Anim.AnimationId = "rbxassetid://"..id; local loadanim = hum:LoadAnimation(Anim); loadanim:Play(); loadanim.TimePosition = time; loadanim:AdjustSpeed(speed); loadanim.Stopped:Connect(function() plr.Character.Animate.Disabled = false; for i, track in pairs (animtrack) do track:Stop() end end) end) end
+local function StopAnim() plr.Character.Animate.Disabled = false; local animtrack = plr.Character.Humanoid:GetPlayingAnimationTracks(); for i, track in pairs (animtrack) do track:Stop() end end
+local function SendNotify(title, message, duration) game:GetService("StarterGui"):SetCore("SendNotification", {Title = title,Text = message,Duration = duration;}) end
+
+-- GUI
+task.wait(0.1)
+local NEXUS = Instance.new("ScreenGui"); NEXUS.Name = "NEXUS"
+pcall(function() NEXUS.Parent = game:GetService("CoreGui") end)
+if not NEXUS.Parent then NEXUS.Parent = plr:WaitForChild("PlayerGui") end
+
+-- ОСНОВНОЙ ФОН (теперь с обрезанием дочерних элементов для идеальных углов)
+local Background = Instance.new("Frame", NEXUS)
+Background.Name = "Background"
+Background.AnchorPoint = Vector2.new(0.5, 0.5)
+Background.BackgroundColor3 = Color3.fromRGB(10,10,22)
+Background.BorderSizePixel = 0
+Background.Position = UDim2.new(0.5, 0, 0.5, 0)
+Background.Size = UDim2.new(0, 500, 0, 350)
+Background.Active = true
+Background.Draggable = true
+Background.ClipsDescendants = true   -- <-- обрезаем всё, что вылезает за скруглённые края
+Instance.new("UICorner", Background).CornerRadius = UDim.new(0,24) -- равномерное скругление
+
+-- Заголовок (расширен под кнопки)
+local TitleLabel = Instance.new("TextLabel", Background)
+TitleLabel.Size = UDim2.new(1, -110, 0, 30)  -- освободили место под две кнопки по 30px + отступ
+TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Font = Enum.Font.GothamBlack
+TitleLabel.Text = T("title")
+TitleLabel.TextColor3 = Color3.fromRGB(0,255,255)
+TitleLabel.TextScaled = true
+TitleLabel.TextSize = 14
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+task.spawn(function() while true do for hue=0,1,0.01 do TitleLabel.TextColor3 = Color3.fromHSV(hue,1,1); task.wait(0.02) end end end)
+
+-- Кнопки управления (смещены левее, не выходят за скругление)
+local MinButton = Instance.new("TextButton", Background)
+MinButton.Name = "MinButton"
+MinButton.Size = UDim2.new(0, 30, 0, 30)
+MinButton.Position = UDim2.new(1, -80, 0, 0)  -- отступ от правого края 80
+MinButton.BackgroundColor3 = Color3.fromRGB(10,10,22)
+MinButton.BorderSizePixel = 0
+MinButton.Text = "—"
+MinButton.Font = Enum.Font.GothamBold
+MinButton.TextColor3 = Color3.fromRGB(255,255,255)
+MinButton.TextScaled = true
+MinButton.ZIndex = 10
+Instance.new("UICorner", MinButton).CornerRadius = UDim.new(0,8)
+
+local CloseButton = Instance.new("TextButton", Background)
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -40, 0, 0)  -- отступ 40
+CloseButton.BackgroundColor3 = Color3.fromRGB(10,10,22)
+CloseButton.BorderSizePixel = 0
+CloseButton.Text = "X"
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextColor3 = Color3.fromRGB(255,50,50)
+CloseButton.TextScaled = true
+CloseButton.ZIndex = 10
+Instance.new("UICorner", CloseButton).CornerRadius = UDim.new(0,8)
+
+local isMinimized = false
+local activeSectionButton = nil
+
+local ContentContainer = Instance.new("Frame", Background)
+ContentContainer.Size = UDim2.new(1, 0, 1, -30)
+ContentContainer.Position = UDim2.new(0, 0, 0, 30)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.ZIndex = 5
+
+-- Версия (теперь внутри и не выходит за границы)
+local VersionLabel = Instance.new("TextLabel", Background)
+VersionLabel.Size = UDim2.new(0, 100, 0, 25)
+VersionLabel.Position = UDim2.new(0, 10, 1, -35)
+VersionLabel.BackgroundTransparency = 1
+VersionLabel.Text = "🔰 V1.0"
+VersionLabel.TextColor3 = Color3.fromRGB(0,200,255)
+VersionLabel.Font = Enum.Font.GothamBold
+VersionLabel.TextSize = 14
+VersionLabel.ZIndex = 10
+
+-- Боковая панель
+local SectionList = Instance.new("Frame", ContentContainer)
+SectionList.Name = "SectionList"
+SectionList.BackgroundColor3 = Color3.fromRGB(20,20,45)
+SectionList.BackgroundTransparency = 0.3
+SectionList.BorderSizePixel = 0
+SectionList.Size = UDim2.new(0, 105, 1, 0)
+Instance.new("UICorner", SectionList).CornerRadius = UDim.new(0,12)
+
+local function createSectionButton(name, y)
+	local btn = Instance.new("TextButton", SectionList)
+	btn.Name = name
+	btn.BackgroundColor3 = Color3.fromRGB(35,35,65)
+	btn.BackgroundTransparency = 0.5
+	btn.BorderSizePixel = 0
+	btn.Position = UDim2.new(0, 5, 0, y)
+	btn.Size = UDim2.new(0, 95, 0, 30)
+	btn.Font = Enum.Font.GothamBold
+	btn.Text = ""
+	btn.TextColor3 = Color3.fromRGB(220,220,255)
+	btn.TextScaled = true
+	btn.TextSize = 14
+	btn.ZIndex = 2
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+	btn.MouseEnter:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(70,70,120); btn.TextColor3 = Color3.fromRGB(0,255,255) end)
+	btn.MouseLeave:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(35,35,65); btn.TextColor3 = Color3.fromRGB(220,220,255) end)
+	return btn
+end
+
+local HomeBtn = createSectionButton("Home_Section_Button", 25)
+local GameBtn = createSectionButton("Game_Section_Button", 65)
+local TargetBtn = createSectionButton("Target_Section_Button", 105)
+local MiscBtn = createSectionButton("Misc_Section_Button", 145)
+local LangBtn = createSectionButton("Lang_Section_Button", 185)
+
+local function createPage(name)
+	local page = Instance.new("ScrollingFrame", ContentContainer)
+	page.Name = name
+	page.BackgroundTransparency = 1
+	page.BorderSizePixel = 0
+	page.Position = UDim2.new(0, 110, 0, 0)
+	page.Size = UDim2.new(1, -110, 1, 0)
+	page.Visible = false
+	page.ScrollBarThickness = 6
+	page.ScrollBarImageColor3 = Color3.fromRGB(0,200,255)
+	return page
+end
+local HomePage = createPage("Home")
+local GamePage = createPage("Game")
+GamePage.CanvasSize = UDim2.new(0, 0, 1.85, 0)
+local TargetPage = createPage("Target")
+TargetPage.CanvasSize = UDim2.new(0, 0, 1.25, 0)
+local MiscPage = createPage("Misc")
+MiscPage.CanvasSize = UDim2.new(0, 0, 1.1, 0)
+local LangPage = createPage("Lang")
+
+local function switchTo(btn)
+	activeSectionButton = btn
+	local name = string.split(btn.Name, "_")[1]
+	for _, v in pairs(SectionList:GetChildren()) do
+		if v:IsA("TextButton") then v.BackgroundTransparency = (v == btn) and 0.5 or 0.9 end
+	end
+	HomePage.Visible = (name == "Home")
+	GamePage.Visible = (name == "Game")
+	TargetPage.Visible = (name == "Target")
+	MiscPage.Visible = (name == "Misc")
+	LangPage.Visible = (name == "Lang")
+end
+
+HomeBtn.MouseButton1Click:Connect(function() if isMinimized then MinButton.MouseButton1Click:Fire() end switchTo(HomeBtn) end)
+GameBtn.MouseButton1Click:Connect(function() if isMinimized then MinButton.MouseButton1Click:Fire() end switchTo(GameBtn) end)
+TargetBtn.MouseButton1Click:Connect(function() if isMinimized then MinButton.MouseButton1Click:Fire() end switchTo(TargetBtn) end)
+MiscBtn.MouseButton1Click:Connect(function() if isMinimized then MinButton.MouseButton1Click:Fire() end switchTo(MiscBtn) end)
+LangBtn.MouseButton1Click:Connect(function() if isMinimized then MinButton.MouseButton1Click:Fire() end switchTo(LangBtn) end)
+
+switchTo(HomeBtn)
+
+MinButton.MouseButton1Click:Connect(function()
+	isMinimized = not isMinimized
+	local targetSize = isMinimized and UDim2.new(0, 500, 0, 30) or UDim2.new(0, 500, 0, 350)
+	TweenService:Create(Background, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetSize}):Play()
+	ContentContainer.Visible = not isMinimized
+	VersionLabel.Visible = not isMinimized
+end)
+
+CloseButton.MouseButton1Click:Connect(function() NEXUS:Destroy() end)
+
+-- Обновление текстов при смене языка
+local function refreshAllTexts()
+	TitleLabel.Text = T("title")
+	HomeBtn.Text = T("home"); GameBtn.Text = T("game"); TargetBtn.Text = T("target"); MiscBtn.Text = T("misc"); LangBtn.Text = T("lang")
+	WelcomeLabel.Text = T("welcome")
+	for _, v in pairs(GamePage:GetChildren()) do if v:IsA("TextButton") and v:GetAttribute("langKey") then v.Text = T(v:GetAttribute("langKey")) end end
+	TargetNameInput.PlaceholderText = T("target_placeholder")
+	UserIDLabel.Text = T("userid_label")
+	for _, v in pairs(TargetPage:GetChildren()) do
+		if v:IsA("TextButton") and v:GetAttribute("langKey") then
+			local key = v:GetAttribute("langKey")
+			if key == "target_view" then
+				v.Text = (workspace.CurrentCamera.CameraSubject ~= plr.Character and workspace.CurrentCamera.CameraSubject == (TargetedPlayer and Players[TargetedPlayer] and Players[TargetedPlayer].Character and Players[TargetedPlayer].Character.Humanoid)) and T("target_unview") or T("target_view")
+			else
+				v.Text = T(key)
+			end
+		end
+	end
+	for _, v in pairs(MiscPage:GetChildren()) do if v:IsA("TextButton") and v:GetAttribute("langKey") then v.Text = T(v:GetAttribute("langKey")) end end
+	for _, v in pairs(LangPage:GetChildren()) do if v:IsA("TextButton") and v:GetAttribute("langKey") then v.Text = T(v:GetAttribute("langKey")) end end
+end
+
+-- HOME
+local ProfileImage = Instance.new("ImageLabel", HomePage)
+ProfileImage.BackgroundColor3 = Color3.fromRGB(30,30,55)
+ProfileImage.Position = UDim2.new(0, 10, 0, 10)
+ProfileImage.Size = UDim2.new(0, 80, 0, 80)
+Instance.new("UICorner", ProfileImage).CornerRadius = UDim.new(1,0)
+pcall(function() ProfileImage.Image = Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420) end)
+
+local WelcomeLabel = Instance.new("TextLabel", HomePage)
+WelcomeLabel.BackgroundTransparency = 1
+WelcomeLabel.Position = UDim2.new(0, 100, 0, 10)
+WelcomeLabel.Size = UDim2.new(0, 270, 0, 80)
+WelcomeLabel.Font = Enum.Font.GothamBold
+WelcomeLabel.Text = T("welcome")
+WelcomeLabel.TextColor3 = Color3.fromRGB(220,220,255)
+WelcomeLabel.TextSize = 20
+WelcomeLabel.TextWrapped = true
+WelcomeLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Универсальная кнопка
+local function addButton(parent, key, y, isToggle, callback)
+	local btn = Instance.new("TextButton", parent)
+	btn:SetAttribute("langKey", key)
+	btn.Size = UDim2.new(0.9, 0, 0, 38)
+	btn.Position = UDim2.new(0.05, 0, 0, y)
+	btn.BackgroundColor3 = Color3.fromRGB(40,40,70)
+	btn.TextColor3 = Color3.fromRGB(220,220,255)
+	btn.Font = Enum.Font.GothamBold
+	btn.Text = T(key)
+	btn.TextSize = 15
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+	if isToggle then
+		local indicator = Instance.new("Frame", btn)
+		indicator.Size = UDim2.new(0, 20, 0, 20)
+		indicator.Position = UDim2.new(1, -30, 0.5, -10)
+		indicator.BackgroundColor3 = Color3.fromRGB(255,0,0)
+		Instance.new("UICorner", indicator).CornerRadius = UDim.new(1,0)
+		btn.MouseButton1Click:Connect(function()
+			if indicator.BackgroundColor3 == Color3.fromRGB(255,0,0) then
+				indicator.BackgroundColor3 = Color3.fromRGB(0,255,150)
+				callback(true, btn)
+			else
+				indicator.BackgroundColor3 = Color3.fromRGB(255,0,0)
+				callback(false, btn)
+			end
+		end)
+	else
+		btn.MouseButton1Click:Connect(function() callback(btn) end)
+	end
+	return btn
+end
+
+-- GAME (все кнопки, как раньше)
+local antiRagdollConn
+addButton(GamePage, "anti_ragdoll", 10, true, function(on) if on then ToggleRagdoll(true); antiRagdollConn = GetRoot(plr).ChildAdded:Connect(function(f) if f.Name == "PushForce" then f.MaxForce = Vector3.zero; f.Velocity = Vector3.zero end end) else ToggleRagdoll(false); if antiRagdollConn then antiRagdollConn:Disconnect() end end end)
+
+local pushAuraThread
+addButton(GamePage, "push_aura", 55, true, function(on) if on then pushAuraThread = task.spawn(function() while ContentContainer.Visible do task.wait(0.3); pcall(function() for _, v in ipairs(Players:GetPlayers()) do if v ~= plr and not table.find(ScriptWhitelist, v.UserId) and not table.find(ForceWhitelist, v.UserId) then Push(v) end end end) end end) else if pushAuraThread then task.cancel(pushAuraThread) end end end)
+
+local spamMinesConn
+addButton(GamePage, "spam_mines", 100, true, function(on) if on then spamMinesConn = plr.Character.Head.ChildAdded:Connect(function(f) if f.Name == "BodyVelocity" then f.MaxForce = Vector3.zero; f.Velocity = Vector3.zero end end); task.spawn(function() while ContentContainer.Visible do task.wait(1); for _, v in ipairs(MinesFolder:GetChildren()) do if v.Name == "Landmine" and v:FindFirstChild("HitPart") then pcall(function() Touch(v.HitPart.TouchInterest, GetRoot(plr)) end) end end end if spamMinesConn then spamMinesConn:Disconnect() end end) else if spamMinesConn then spamMinesConn:Disconnect() end end end)
+
+addButton(GamePage, "potion_fling", 145, true, function(on) if on and CheckPotion() then PotionTool.Parent = plr.Character; pcall(function() PotionTool.InSide.Massless = true; PotionTool.Cap.Massless = true; PotionTool.Handle.Massless = true; PotionTool.GripUp = Vector3.new(0,1,0); PotionTool.GripPos = Vector3.new(5000,-25,5000); PotionTool.Parent = plr.Backpack; PotionTool.Parent = plr.Character end) elseif not on then pcall(function() PotionTool.InSide.Massless = false; PotionTool.Cap.Massless = false; PotionTool.Handle.Massless = false; PotionTool.GripUp = Vector3.new(0,1,0); PotionTool.GripPos = Vector3.new(0.1,-0.5,0) end) end end)
+
+local touchFlingThread
+addButton(GamePage, "touch_fling", 190, true, function(on) if on then local fixpos = GetRoot(plr).Position; ToggleVoidProtection(true); touchFlingThread = task.spawn(function() while ContentContainer.Visible do local rv = GetRoot(plr).Velocity; GetRoot(plr).Velocity = Vector3.new(math.random(-150,150),-25000,math.random(-150,150)); RunService.RenderStepped:wait(); GetRoot(plr).Velocity = rv; RunService.Heartbeat:wait() end end); TeleportTO(fixpos.X,fixpos.Y,fixpos.Z,"pos","safe"); ToggleVoidProtection(false) else if touchFlingThread then task.cancel(touchFlingThread) end end end)
+
+addButton(GamePage, "potion_dick", 235, true, function(on) if on and CheckPotion() then PotionTool.GripUp = Vector3.new(1,0,0); PotionTool.GripPos = Vector3.new(1.5, 0.5, -1.5) elseif not on then pcall(function() PotionTool.GripUp = Vector3.new(0,1,0); PotionTool.GripPos = Vector3.new(0.1,-0.5,0) end) end end)
+
+addButton(GamePage, "void_protection", 280, true, function(on) ToggleVoidProtection(on) end)
+
+addButton(GamePage, "push_all", 325, false, function() local oldpos = GetRoot(plr).Position; for _, v in ipairs(Players:GetPlayers()) do pcall(function() if v ~= plr and not table.find(ScriptWhitelist, v.UserId) and not table.find(ForceWhitelist, v.UserId) then PredictionTP(v); task.wait(GetPing()+0.05); Push(v) end end) end; TeleportTO(oldpos.X,oldpos.Y,oldpos.Z,"pos","safe") end)
+
+addButton(GamePage, "break_cannons", 370, false, function() ToggleVoidProtection(true); TeleportTO(0,-10000,0,"pos"); task.wait(GetPing()+0.1); ToggleVoidProtection(false); task.wait(GetPing()+0.1); for _, folder in ipairs(CannonsFolders) do for _, v in ipairs(folder:GetChildren()) do if v.Name == "Cannon" then pcall(function() fireclickdetector(v.Cannon_Part.ClickDetector) end) end end end end)
+
+addButton(GamePage, "lethal_cannons", 415, false, function() for _, folder in ipairs(CannonsFolders) do for _, v in ipairs(folder:GetChildren()) do if v.Name == "Cannon" then pcall(function() plr.Character.Humanoid:ChangeState(15); task.wait(GetPing()); fireclickdetector(v.Cannon_Part.ClickDetector); plr.CharacterAdded:Wait(); task.wait(1) end) end end end end)
+
+addButton(GamePage, "chat_alert", 460, false, function() for _ = 1,3 do game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer("\u{205F}", "All") end end)
+
+addButton(GamePage, "modded_push", 505, false, function() local tool = Instance.new("Tool"); tool.Name = "ModdedPush"; tool.RequiresHandle = false; tool.TextureId = "rbxassetid://14478599909"; tool.ToolTip = "Modded push"; tool.Activated:Connect(function() local root = GetRoot(plr); local hit = mouse.Target; local person; if hit and hit.Parent then if hit.Parent:IsA("Model") then person = Players:GetPlayerFromCharacter(hit.Parent) elseif hit.Parent:IsA("Accessory") then person = Players:GetPlayerFromCharacter(hit.Parent.Parent) end; if person then local pushpos = root.CFrame; PredictionTP(person); task.wait(GetPing()+0.05); Push(person); root.CFrame = pushpos end end end); tool.Parent = plr.Backpack end)
+
+-- TP кнопки
+local tpList = {
+	{"tp_cannon1", -61, 34, -228}, {"tp_cannon2", 50, 34, -228}, {"tp_cannon3", -6, 35, -106},
+	{"tp_minefield", -65, 23, -151}, {"tp_ballon", -118, 23, -126},
+	{"tp_stairs", -6, 203, -496}, {"tp_moving_stairs", -210, 87, -224}, {"tp_spiral_stairs", 151, 847, -306},
+	{"tp_skyscraper", 142, 1033, -192}, {"tp_pool", -133, 65, -321}
+}
+local tpY = 550
+for _, tp in ipairs(tpList) do
+	addButton(GamePage, tp[1], tpY, false, function() TeleportTO(tp[2],tp[3],tp[4],"pos","safe") end)
+	tpY = tpY + 45
+end
+
+local cmdBar = Instance.new("TextBox", GamePage)
+cmdBar.Size = UDim2.new(0.9, 0, 0, 35)
+cmdBar.Position = UDim2.new(0.05, 0, 0, tpY+10)
+cmdBar.BackgroundColor3 = Color3.fromRGB(30,30,55)
+cmdBar.TextColor3 = Color3.fromRGB(220,220,255)
+cmdBar.PlaceholderText = T("cmd_bar")
+cmdBar.Font = Enum.Font.Gotham
+cmdBar.TextSize = 14
+cmdBar.FocusLost:Connect(function() local c = cmdBar.Text; Players:Chat(c); SendNotify("NEXUS-SYSTEM", T("notification_executed")..c, 5); cmdBar.Text = "" end)
+
+-- TARGET (исправленный, идентично предыдущей версии)
+local TargetImage = Instance.new("ImageLabel", TargetPage)
+TargetImage.BackgroundColor3 = Color3.fromRGB(30,30,55)
+TargetImage.BorderColor3 = Color3.fromRGB(0,255,150)
+TargetImage.Position = UDim2.new(0, 25, 0, 25)
+TargetImage.Size = UDim2.new(0, 100, 0, 100)
+TargetImage.Image = "rbxassetid://10818605405"
+Instance.new("UICorner", TargetImage).CornerRadius = UDim.new(0,12)
+
+local TargetNameInput = Instance.new("TextBox", TargetPage)
+TargetNameInput.BackgroundColor3 = Color3.fromRGB(30,30,55)
+TargetNameInput.BorderColor3 = Color3.fromRGB(0,255,150)
+TargetNameInput.Position = UDim2.new(0, 150, 0, 30)
+TargetNameInput.Size = UDim2.new(0, 175, 0, 30)
+TargetNameInput.Font = Enum.Font.Gotham
+TargetNameInput.PlaceholderText = T("target_placeholder")
+TargetNameInput.TextColor3 = Color3.fromRGB(220,220,255)
+TargetNameInput.TextSize = 14
+Instance.new("UICorner", TargetNameInput).CornerRadius = UDim.new(0,8)
+
+local ClickTargetBtn = Instance.new("ImageButton", TargetNameInput)
+ClickTargetBtn.BackgroundTransparency = 1
+ClickTargetBtn.Position = UDim2.new(0, 180, 0, 0)
+ClickTargetBtn.Size = UDim2.new(0, 30, 0, 30)
+ClickTargetBtn.Image = "rbxassetid://2716591855"
+
+local UserIDLabel = Instance.new("TextLabel", TargetPage)
+UserIDLabel.BackgroundTransparency = 1
+UserIDLabel.Position = UDim2.new(0, 150, 0, 70)
+UserIDLabel.Size = UDim2.new(0, 280, 0, 75)
+UserIDLabel.Font = Enum.Font.GothamBold
+UserIDLabel.Text = T("userid_label")
+UserIDLabel.TextColor3 = Color3.fromRGB(0,255,150)
+UserIDLabel.TextSize = 18
+UserIDLabel.TextXAlignment = Enum.TextXAlignment.Left
+UserIDLabel.TextYAlignment = Enum.TextYAlignment.Top
+
+local targetTasks = {}
+local function stopTargetTask(key)
+	if targetTasks[key] then task.cancel(targetTasks[key]); targetTasks[key] = nil end
+	pcall(function() if GetRoot(plr):FindFirstChild("BreakVelocity") then GetRoot(plr).BreakVelocity:Destroy() end end)
+	StopAnim()
+end
+
+local function addTargetToggle(key, y, x, w, h, onActivate, onDeactivate)
+	local btn = Instance.new("TextButton", TargetPage)
+	btn:SetAttribute("langKey", key)
+	btn.Size = UDim2.new(0, w, 0, h)
+	btn.Position = UDim2.new(0, x, 0, y)
+	btn.Text = T(key)
+	btn.BackgroundColor3 = Color3.fromRGB(55,55,95)
+	btn.TextColor3 = Color3.fromRGB(220,220,255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 13
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+	local active = false
+	local indicator = Instance.new("Frame", btn)
+	indicator.Size = UDim2.new(0, 15, 0, 15)
+	indicator.Position = UDim2.new(1, -20, 0.5, -7)
+	indicator.BackgroundColor3 = Color3.fromRGB(255,0,0)
+	Instance.new("UICorner", indicator).CornerRadius = UDim.new(1,0)
+	btn.MouseButton1Click:Connect(function()
+		active = not active
+		if active then
+			indicator.BackgroundColor3 = Color3.fromRGB(0,255,150)
+			if onActivate then onActivate(btn) end
+		else
+			indicator.BackgroundColor3 = Color3.fromRGB(255,0,0)
+			if onDeactivate then onDeactivate(btn) end
+			stopTargetTask(key)
+			if key == "target_view" and workspace.CurrentCamera.CameraSubject ~= plr.Character.Humanoid then
+				workspace.CurrentCamera.CameraSubject = plr.Character.Humanoid
+				btn.Text = T("target_view")
+			end
+		end
+	end)
+	return btn
+end
+
+-- View, Fling, Focus, Bang, Headsit, Stand, Backpack, Doggy, Drag (полные функции)
+addTargetToggle("target_view", 150, 25, 150, 30,
+	function(btn)
+		if not TargetedPlayer then return end
+		local target = Players[TargetedPlayer]
+		if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+			workspace.CurrentCamera.CameraSubject = target.Character.Humanoid
+			btn.Text = T("target_unview")
+		end
+	end,
+	function(btn) workspace.CurrentCamera.CameraSubject = plr.Character.Humanoid; btn.Text = T("target_view") end
+)
+
+addTargetToggle("target_fling", 150, 210, 150, 30,
+	function(btn)
+		if not TargetedPlayer then return end
+		local oldPos = GetRoot(plr).Position
+		targetTasks["target_fling_pos"] = oldPos
+		targetTasks["target_fling"] = task.spawn(function()
+			while true do
+				local rv = GetRoot(plr).Velocity
+				GetRoot(plr).Velocity = Vector3.new(math.random(-150,150),-25000,math.random(-150,150))
+				RunService.RenderStepped:wait()
+				GetRoot(plr).Velocity = rv
+				if not ContentContainer.Visible then break end
+				RunService.Heartbeat:wait()
+			end
+		end)
+		targetTasks["target_fling_tp"] = task.spawn(function()
+			while true do
+				pcall(function() PredictionTP(Players[TargetedPlayer], "safe") end)
+				task.wait()
+				if not ContentContainer.Visible then break end
+			end
+		end)
+	end,
+	function(btn)
+		if targetTasks["target_fling"] then task.cancel(targetTasks["target_fling"]) end
+		if targetTasks["target_fling_tp"] then task.cancel(targetTasks["target_fling_tp"]) end
+		local oldPos = targetTasks["target_fling_pos"]
+		if oldPos then
+			TeleportTO(oldPos.X, oldPos.Y, oldPos.Z, "pos", "safe")
+			targetTasks["target_fling_pos"] = nil
+		end
+	end
+)
+
+addTargetToggle("target_focus", 200, 25, 150, 30,
+	function(btn)
+		if not TargetedPlayer then return end
+		targetTasks["target_focus"] = task.spawn(function()
+			while true do
+				pcall(function() local target = Players[TargetedPlayer]; TeleportTO(0,0,0,target); Push(target) end)
+				task.wait(0.2)
+				if not ContentContainer.Visible then break end
+			end
+		end)
+	end,
+	function(btn) stopTargetTask("target_focus") end
+)
+
+addTargetToggle("target_bang", 200, 210, 150, 30,
+	function(btn)
+		if not TargetedPlayer then return end
+		PlayAnim(5918726674,0,1)
+		if not GetRoot(plr):FindFirstChild("BreakVelocity") then
+			local v = Instance.new("BodyAngularVelocity", GetRoot(plr)); v.Name = "BreakVelocity"; v.MaxTorque = Vector3.new(50000,50000,50000); v.P = 1250
+		end
+		targetTasks["target_bang"] = task.spawn(function()
+			while true do
+				pcall(function() GetRoot(plr).CFrame = GetRoot(Players[TargetedPlayer]).CFrame * CFrame.new(0,0,1.1); GetRoot(plr).Velocity = Vector3.zero end)
+				task.wait()
+				if not ContentContainer.Visible then break end
+			end
+		end)
+	end,
+	function(btn)
+		stopTargetTask("target_bang")
+		if GetRoot(plr):FindFirstChild("BreakVelocity") then GetRoot(plr).BreakVelocity:Destroy() end
+		StopAnim()
+	end
+)
+
+addTargetToggle("target_headsit", 250, 25, 150, 30,
+	function(btn)
+		if not TargetedPlayer then return end
+		if not GetRoot(plr):FindFirstChild("BreakVelocity") then
+			local v = Instance.new("BodyAngularVelocity", GetRoot(plr)); v.Name = "BreakVelocity"; v.MaxTorque = Vector3.new(50000,50000,50000); v.P = 1250
+		end
+		plr.Character.Humanoid.Sit = true
+		targetTasks["target_headsit"] = task.spawn(function()
+			while true do
+				pcall(function() GetRoot(plr).CFrame = Players[TargetedPlayer].Character.Head.CFrame * CFrame.new(0,2,0); GetRoot(plr).Velocity = Vector3.zero end)
+				task.wait()
+				if not ContentContainer.Visible then break end
+			end
+		end)
+	end,
+	function(btn)
+		stopTargetTask("target_headsit")
+		plr.Character.Humanoid.Sit = false
+		if GetRoot(plr):FindFirstChild("BreakVelocity") then GetRoot(plr).BreakVelocity:Destroy() end
+	end
+)
+
+addTargetToggle("target_stand", 250, 210, 150, 30,
+	function(btn)
+		if not TargetedPlayer then return end
+		PlayAnim(13823324057,4,0)
+		if not GetRoot(plr):FindFirstChild("BreakVelocity") then
+			local v = Instance.new("BodyAngularVelocity", GetRoot(plr)); v.Name = "BreakVelocity"; v.MaxTorque = Vector3.new(50000,50000,50000); v.P = 1250
+		end
+		targetTasks["target_stand"] = task.spawn(function()
+			while true do
+				pcall(function() GetRoot(plr).CFrame = GetRoot(Players[TargetedPlayer]).CFrame * CFrame.new(-3,1,0); GetRoot(plr).Velocity = Vector3.zero end)
+				task.wait()
+				if not ContentContainer.Visible then break end
+			end
+		end)
+	end,
+	function(btn)
+		stopTargetTask("target_stand")
+		if GetRoot(plr):FindFirstChild("BreakVelocity") then GetRoot(plr).BreakVelocity:Destroy() end
+		StopAnim()
+	end
+)
+
+addTargetToggle("target_backpack", 300, 25, 150, 30,
+	function(btn)
+		if not TargetedPlayer then return end
+		if not GetRoot(plr):FindFirstChild("BreakVelocity") then
+			local v = Instance.new("BodyAngularVelocity", GetRoot(plr)); v.Name = "BreakVelocity"; v.MaxTorque = Vector3.new(50000,50000,50000); v.P = 1250
+		end
+		plr.Character.Humanoid.Sit = true
+		targetTasks["target_backpack"] = task.spawn(function()
+			while true do
+				pcall(function() GetRoot(plr).CFrame = GetRoot(Players[TargetedPlayer]).CFrame * CFrame.new(0,0,1.2) * CFrame.Angles(0,-3,0); GetRoot(plr).Velocity = Vector3.zero end)
+				task.wait()
+				if not ContentContainer.Visible then break end
+			end
+		end)
+	end,
+	function(btn)
+		stopTargetTask("target_backpack")
+		plr.Character.Humanoid.Sit = false
+		if GetRoot(plr):FindFirstChild("BreakVelocity") then GetRoot(plr).BreakVelocity:Destroy() end
+	end
+)
+
+addTargetToggle("target_doggy", 300, 210, 150, 30,
+	function(btn)
+		if not TargetedPlayer then return end
+		PlayAnim(13694096724,3.4,0)
+		if not GetRoot(plr):FindFirstChild("BreakVelocity") then
+			local v = Instance.new("BodyAngularVelocity", GetRoot(plr)); v.Name = "BreakVelocity"; v.MaxTorque = Vector3.new(50000,50000,50000); v.P = 1250
+		end
+		targetTasks["target_doggy"] = task.spawn(function()
+			while true do
+				pcall(function() GetRoot(plr).CFrame = Players[TargetedPlayer].Character.LowerTorso.CFrame * CFrame.new(0,0.23,0); GetRoot(plr).Velocity = Vector3.zero end)
+				task.wait()
+				if not ContentContainer.Visible then break end
+			end
+		end)
+	end,
+	function(btn)
+		stopTargetTask("target_doggy")
+		if GetRoot(plr):FindFirstChild("BreakVelocity") then GetRoot(plr).BreakVelocity:Destroy() end
+		StopAnim()
+	end
+)
+
+addTargetToggle("target_drag", 350, 25, 150, 30,
+	function(btn)
+		if not TargetedPlayer then return end
+		PlayAnim(10714360343,0.5,0)
+		if not GetRoot(plr):FindFirstChild("BreakVelocity") then
+			local v = Instance.new("BodyAngularVelocity", GetRoot(plr)); v.Name = "BreakVelocity"; v.MaxTorque = Vector3.new(50000,50000,50000); v.P = 1250
+		end
+		targetTasks["target_drag"] = task.spawn(function()
+			while true do
+				pcall(function() GetRoot(plr).CFrame = Players[TargetedPlayer].Character.RightHand.CFrame * CFrame.new(0,-2.5,1) * CFrame.Angles(-2,-3,0); GetRoot(plr).Velocity = Vector3.zero end)
+				task.wait()
+				if not ContentContainer.Visible then break end
+			end
+		end)
+	end,
+	function(btn)
+		stopTargetTask("target_drag")
+		if GetRoot(plr):FindFirstChild("BreakVelocity") then GetRoot(plr).BreakVelocity:Destroy() end
+		StopAnim()
+	end
+)
+
+local function addTargetAction(key, y, x, w, h, callback)
+	local btn = Instance.new("TextButton", TargetPage)
+	btn:SetAttribute("langKey", key)
+	btn.Size = UDim2.new(0, w, 0, h)
+	btn.Position = UDim2.new(0, x, 0, y)
+	btn.Text = T(key)
+	btn.BackgroundColor3 = Color3.fromRGB(55,55,95)
+	btn.TextColor3 = Color3.fromRGB(220,220,255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 13
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+	btn.MouseButton1Click:Connect(function() callback() end)
+	return btn
+end
+
+addTargetAction("target_push", 350, 210, 150, 30, function()
+	if not TargetedPlayer then return end
+	local pushpos = GetRoot(plr).CFrame
+	PredictionTP(Players[TargetedPlayer]); task.wait(GetPing()+0.05)
+	Push(Players[TargetedPlayer]); GetRoot(plr).CFrame = pushpos
+end)
+
+addTargetAction("target_whitelist", 400, 25, 150, 30, function()
+	if not TargetedPlayer then return end
+	local uid = Players[TargetedPlayer].UserId
+	if table.find(ScriptWhitelist, uid) then
+		table.remove(ScriptWhitelist, table.find(ScriptWhitelist, uid))
+		SendNotify("NEXUS-SYSTEM", TargetedPlayer..T("notification_whitelist_remove"),5)
+	else
+		table.insert(ScriptWhitelist, uid)
+		SendNotify("NEXUS-SYSTEM", TargetedPlayer..T("notification_whitelist_add"),5)
+	end
+end)
+
+addTargetAction("target_teleport", 400, 210, 150, 30, function()
+	if TargetedPlayer then TeleportTO(0,0,0,Players[TargetedPlayer],"safe") end
+end)
+
+local function UpdateTarget(player)
+	if player and table.find(ForceWhitelist, player.UserId) then
+		SendNotify("NEXUS-SYSTEM", T("notification_target_cant").."@"..player.Name.." / "..player.DisplayName, 5)
+		return
+	end
+	if player then
+		TargetedPlayer = player.Name
+		TargetNameInput.Text = player.Name
+		UserIDLabel.Text = ("UserID: "..player.UserId.."\nDisplay: "..player.DisplayName.."\nJoined: "..os.date("%d-%m-%Y", os.time()-player.AccountAge*24*3600).." [Day/Month/Year]")
+		TargetImage.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+	else
+		TargetedPlayer = nil
+		TargetNameInput.Text = T("target_placeholder")
+		UserIDLabel.Text = T("userid_label")
+		TargetImage.Image = "rbxassetid://10818605405"
+		for k, _ in pairs(targetTasks) do stopTargetTask(k) end
+		workspace.CurrentCamera.CameraSubject = plr.Character.Humanoid
+	end
+end
+
+ClickTargetBtn.MouseButton1Click:Connect(function()
+	local tool = Instance.new("Tool"); tool.Name = "ClickTarget"; tool.RequiresHandle = false
+	tool.TextureId = "rbxassetid://2716591855"; tool.ToolTip = "Select Target"
+	tool.Activated:Connect(function()
+		local hit = mouse.Target
+		local person
+		if hit and hit.Parent then
+			if hit.Parent:IsA("Model") then person = Players:GetPlayerFromCharacter(hit.Parent)
+			elseif hit.Parent:IsA("Accessory") then person = Players:GetPlayerFromCharacter(hit.Parent.Parent) end
+			if person then UpdateTarget(person) end
+		end
+	end)
+	tool.Parent = plr.Backpack
+end)
+
+TargetNameInput.FocusLost:Connect(function()
+	local target = GetPlayer(TargetNameInput.Text)
+	UpdateTarget(target)
+end)
+
+-- MISC (без изменений)
+addButton(MiscPage, "misc_anti_fling", 10, true, function(on) _G.AntiFlingToggled = on; if on then loadstring(game:HttpGet('https://raw.githubusercontent.com/H20CalibreYT/SystemBroken/main/AntiFling'))() end end)
+addButton(MiscPage, "misc_anti_chat", 55, true, function(on) if on then task.spawn(function() while ContentContainer.Visible do Players:Chat(RandomChar()); task.wait() end end) end end)
+local antiAFKConn
+addButton(MiscPage, "misc_anti_afk", 100, true, function(on) if on then antiAFKConn = plr.Idled:Connect(function() game:GetService("VirtualUser"):CaptureController(); game:GetService("VirtualUser"):ClickButton2(Vector2.new()) end) else if antiAFKConn then antiAFKConn:Disconnect() end end end)
+addButton(MiscPage, "misc_shaders", 145, true, function(on) if on then local sky = Instance.new("Sky", Light); sky.StarCount = 5000; sky.SunAngularSize = 5; Instance.new("BloomEffect", Light).Intensity = 0.3; Instance.new("BlurEffect", Light).Size = 5; Instance.new("ColorCorrectionEffect", Light).Saturation = 0.25; Instance.new("SunRaysEffect", Light).Intensity = 0.1; Light.Brightness = 2.25; Light.ClockTime = 17.55 else for _, v in pairs(Light:GetChildren()) do v:Destroy() end; Light.Brightness = 2; Light.ExposureCompensation = 0 end end)
+addButton(MiscPage, "misc_day", 190, false, function() game:GetService("Lighting").ClockTime = 14 end)
+addButton(MiscPage, "misc_night", 235, false, function() game:GetService("Lighting").ClockTime = 19 end)
+addButton(MiscPage, "misc_rejoin", 280, false, function() game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, plr) end)
+addButton(MiscPage, "misc_cmdx", 325, false, function() loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source",true))() end)
+addButton(MiscPage, "misc_infyield", 370, false, function() loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))() end)
+addButton(MiscPage, "misc_serverhop", 415, false, function() if httprequest then local req = httprequest({Url = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100"}); local body = HttpService:JSONDecode(req.Body); local servers = {}; if body and body.data then for _, v in ipairs(body.data) do if type(v) == "table" and v.playing < v.maxPlayers and v.id ~= game.JobId then table.insert(servers, v.id) end end end; if #servers > 0 then game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, servers[math.random(#servers)], plr) end end end)
+addButton(MiscPage, "misc_explode", 460, false, function() ToggleRagdoll(false); task.wait(); plr.Character.Humanoid:ChangeState(0); local bav = Instance.new("BodyAngularVelocity", GetRoot(plr)); bav.Name = "Spin"; bav.MaxTorque = Vector3.new(0,math.huge,0); bav.AngularVelocity = Vector3.new(0,150,0); task.wait(3); plr.Character.Humanoid:ChangeState(15) end)
+addButton(MiscPage, "misc_emotes", 505, false, function() if not FreeEmotesEnabled then FreeEmotesEnabled = true; SendNotify("NEXUS-SYSTEM", T("notification_emotes"), 7); loadstring(game:HttpGet("https://raw.githubusercontent.com/H20CalibreYT/SystemBroken/main/AllEmotes"))() end end)
+
+-- LANG (без изменений)
+local function addLangButton(key, y, langCode)
+	local btn = Instance.new("TextButton", LangPage)
+	btn:SetAttribute("langKey", key)
+	btn.Size = UDim2.new(0.8, 0, 0, 50)
+	btn.Position = UDim2.new(0.1, 0, 0, y)
+	btn.BackgroundColor3 = Color3.fromRGB(45,45,75)
+	btn.TextColor3 = Color3.fromRGB(220,220,255)
+	btn.Font = Enum.Font.GothamBold
+	btn.Text = T(key)
+	btn.TextSize = 18
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,12)
+	btn.MouseButton1Click:Connect(function()
+		lang = langCode
+		refreshAllTexts()
+	end)
+end
+addLangButton("lang_en", 10, "EN")
+addLangButton("lang_ru", 70, "RU")
+
+-- Глобальная клавиша B
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed) if gameProcessed then return end; if input.KeyCode == Enum.KeyCode.B then Background.Visible = not Background.Visible end end)
+
+plr.CharacterAdded:Connect(function(x) task.wait(GetPing()+0.1); x:WaitForChild("Humanoid"); if SavedCheckpoint then TeleportTO(SavedCheckpoint.X, SavedCheckpoint.Y, SavedCheckpoint.Z, "pos", "safe") end end)
+
+refreshAllTexts()
+SendNotify("NEXUS-SYSTEM", T("notification_loaded"), 10)
