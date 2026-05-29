@@ -1,10 +1,10 @@
---[[ NEXUS-SYSTEM – симметричные мягкие углы ]]
+--[[ NEXUS-SYSTEM – полная рабочая версия ]]
 if game.CoreGui:FindFirstChild("NEXUS") then
 	game:GetService("StarterGui"):SetCore("SendNotification", {Title = "NEXUS-SYSTEM",Text = "GUI Already loaded, rejoin to re-execute",Duration = 5})
 	return
 end
 
--- VARIABLES (без изменений)
+-- VARIABLES
 _G.AntiFlingToggled = false
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
@@ -30,7 +30,7 @@ pcall(function()
 	end
 end)
 
--- Локализация (полная, как раньше)
+-- Локализация
 local lang = "EN"
 local L = {
 	EN = {
@@ -92,7 +92,7 @@ local L = {
 }
 local function T(key) return L[lang][key] or key end
 
--- FUNCTIONS (без изменений)
+-- FUNCTIONS
 _G.shield = function(id) if not table.find(ForceWhitelist,id) then table.insert(ForceWhitelist, id) end end
 local function RandomChar() local length = math.random(1,5); local array = {}; for i=1,length do array[i]=string.char(math.random(32,126)) end; return table.concat(array) end
 local function GetPing() return (game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())/1000 end
@@ -117,102 +117,57 @@ local NEXUS = Instance.new("ScreenGui"); NEXUS.Name = "NEXUS"
 pcall(function() NEXUS.Parent = game:GetService("CoreGui") end)
 if not NEXUS.Parent then NEXUS.Parent = plr:WaitForChild("PlayerGui") end
 
--- ОСНОВНОЙ ФОН (теперь с обрезанием дочерних элементов для идеальных углов)
 local Background = Instance.new("Frame", NEXUS)
-Background.Name = "Background"
-Background.AnchorPoint = Vector2.new(0.5, 0.5)
-Background.BackgroundColor3 = Color3.fromRGB(10,10,22)
-Background.BorderSizePixel = 0
-Background.Position = UDim2.new(0.5, 0, 0.5, 0)
-Background.Size = UDim2.new(0, 500, 0, 350)
-Background.Active = true
-Background.Draggable = true
-Background.ClipsDescendants = true   -- <-- обрезаем всё, что вылезает за скруглённые края
-Instance.new("UICorner", Background).CornerRadius = UDim.new(0,24) -- равномерное скругление
+Background.Name = "Background"; Background.AnchorPoint = Vector2.new(0.5, 0.5)
+Background.BackgroundColor3 = Color3.fromRGB(10,10,22); Background.BorderSizePixel = 0
+Background.Position = UDim2.new(0.5, 0, 0.5, 0); Background.Size = UDim2.new(0, 500, 0, 350)
+Background.Active = true; Background.Draggable = true; Background.ClipsDescendants = true
+Instance.new("UICorner", Background).CornerRadius = UDim.new(0,24)
 
--- Заголовок (расширен под кнопки)
 local TitleLabel = Instance.new("TextLabel", Background)
-TitleLabel.Size = UDim2.new(1, -110, 0, 30)  -- освободили место под две кнопки по 30px + отступ
-TitleLabel.Position = UDim2.new(0, 0, 0, 0)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Font = Enum.Font.GothamBlack
-TitleLabel.Text = T("title")
-TitleLabel.TextColor3 = Color3.fromRGB(0,255,255)
-TitleLabel.TextScaled = true
-TitleLabel.TextSize = 14
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+TitleLabel.Size = UDim2.new(1, -110, 0, 30); TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.BackgroundTransparency = 1; TitleLabel.Font = Enum.Font.GothamBlack
+TitleLabel.Text = T("title"); TitleLabel.TextColor3 = Color3.fromRGB(0,255,255)
+TitleLabel.TextScaled = true; TitleLabel.TextSize = 14; TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
 task.spawn(function() while true do for hue=0,1,0.01 do TitleLabel.TextColor3 = Color3.fromHSV(hue,1,1); task.wait(0.02) end end end)
 
--- Кнопки управления (смещены левее, не выходят за скругление)
 local MinButton = Instance.new("TextButton", Background)
-MinButton.Name = "MinButton"
-MinButton.Size = UDim2.new(0, 30, 0, 30)
-MinButton.Position = UDim2.new(1, -80, 0, 0)  -- отступ от правого края 80
-MinButton.BackgroundColor3 = Color3.fromRGB(10,10,22)
-MinButton.BorderSizePixel = 0
-MinButton.Text = "—"
-MinButton.Font = Enum.Font.GothamBold
-MinButton.TextColor3 = Color3.fromRGB(255,255,255)
-MinButton.TextScaled = true
-MinButton.ZIndex = 10
+MinButton.Size = UDim2.new(0, 30, 0, 30); MinButton.Position = UDim2.new(1, -80, 0, 0)
+MinButton.BackgroundColor3 = Color3.fromRGB(10,10,22); MinButton.BorderSizePixel = 0
+MinButton.Text = "—"; MinButton.Font = Enum.Font.GothamBold; MinButton.TextColor3 = Color3.fromRGB(255,255,255)
+MinButton.TextScaled = true; MinButton.ZIndex = 10
 Instance.new("UICorner", MinButton).CornerRadius = UDim.new(0,8)
 
 local CloseButton = Instance.new("TextButton", Background)
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -40, 0, 0)  -- отступ 40
-CloseButton.BackgroundColor3 = Color3.fromRGB(10,10,22)
-CloseButton.BorderSizePixel = 0
-CloseButton.Text = "X"
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextColor3 = Color3.fromRGB(255,50,50)
-CloseButton.TextScaled = true
-CloseButton.ZIndex = 10
+CloseButton.Size = UDim2.new(0, 30, 0, 30); CloseButton.Position = UDim2.new(1, -40, 0, 0)
+CloseButton.BackgroundColor3 = Color3.fromRGB(10,10,22); CloseButton.BorderSizePixel = 0
+CloseButton.Text = "X"; CloseButton.Font = Enum.Font.GothamBold; CloseButton.TextColor3 = Color3.fromRGB(255,50,50)
+CloseButton.TextScaled = true; CloseButton.ZIndex = 10
 Instance.new("UICorner", CloseButton).CornerRadius = UDim.new(0,8)
 
 local isMinimized = false
 local activeSectionButton = nil
 
 local ContentContainer = Instance.new("Frame", Background)
-ContentContainer.Size = UDim2.new(1, 0, 1, -30)
-ContentContainer.Position = UDim2.new(0, 0, 0, 30)
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.ZIndex = 5
+ContentContainer.Size = UDim2.new(1, 0, 1, -30); ContentContainer.Position = UDim2.new(0, 0, 0, 30)
+ContentContainer.BackgroundTransparency = 1; ContentContainer.ZIndex = 5
 
--- Версия (теперь внутри и не выходит за границы)
 local VersionLabel = Instance.new("TextLabel", Background)
-VersionLabel.Size = UDim2.new(0, 100, 0, 25)
-VersionLabel.Position = UDim2.new(0, 10, 1, -35)
-VersionLabel.BackgroundTransparency = 1
-VersionLabel.Text = "🔰 V1.0"
-VersionLabel.TextColor3 = Color3.fromRGB(0,200,255)
-VersionLabel.Font = Enum.Font.GothamBold
-VersionLabel.TextSize = 14
-VersionLabel.ZIndex = 10
+VersionLabel.Size = UDim2.new(0, 100, 0, 25); VersionLabel.Position = UDim2.new(0, 10, 1, -35)
+VersionLabel.BackgroundTransparency = 1; VersionLabel.Text = "🔰 V1.0"
+VersionLabel.TextColor3 = Color3.fromRGB(0,200,255); VersionLabel.Font = Enum.Font.GothamBold; VersionLabel.TextSize = 14; VersionLabel.ZIndex = 10
 
--- Боковая панель
 local SectionList = Instance.new("Frame", ContentContainer)
-SectionList.Name = "SectionList"
-SectionList.BackgroundColor3 = Color3.fromRGB(20,20,45)
-SectionList.BackgroundTransparency = 0.3
-SectionList.BorderSizePixel = 0
-SectionList.Size = UDim2.new(0, 105, 1, 0)
+SectionList.BackgroundColor3 = Color3.fromRGB(20,20,45); SectionList.BackgroundTransparency = 0.3
+SectionList.BorderSizePixel = 0; SectionList.Size = UDim2.new(0, 105, 1, 0)
 Instance.new("UICorner", SectionList).CornerRadius = UDim.new(0,12)
 
 local function createSectionButton(name, y)
 	local btn = Instance.new("TextButton", SectionList)
-	btn.Name = name
-	btn.BackgroundColor3 = Color3.fromRGB(35,35,65)
-	btn.BackgroundTransparency = 0.5
-	btn.BorderSizePixel = 0
-	btn.Position = UDim2.new(0, 5, 0, y)
-	btn.Size = UDim2.new(0, 95, 0, 30)
-	btn.Font = Enum.Font.GothamBold
-	btn.Text = ""
-	btn.TextColor3 = Color3.fromRGB(220,220,255)
-	btn.TextScaled = true
-	btn.TextSize = 14
-	btn.ZIndex = 2
+	btn.Name = name; btn.BackgroundColor3 = Color3.fromRGB(35,35,65); btn.BackgroundTransparency = 0.5
+	btn.BorderSizePixel = 0; btn.Position = UDim2.new(0, 5, 0, y); btn.Size = UDim2.new(0, 95, 0, 30)
+	btn.Font = Enum.Font.GothamBold; btn.Text = ""; btn.TextColor3 = Color3.fromRGB(220,220,255)
+	btn.TextScaled = true; btn.ZIndex = 2
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
 	btn.MouseEnter:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(70,70,120); btn.TextColor3 = Color3.fromRGB(0,255,255) end)
 	btn.MouseLeave:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(35,35,65); btn.TextColor3 = Color3.fromRGB(220,220,255) end)
@@ -227,23 +182,15 @@ local LangBtn = createSectionButton("Lang_Section_Button", 185)
 
 local function createPage(name)
 	local page = Instance.new("ScrollingFrame", ContentContainer)
-	page.Name = name
-	page.BackgroundTransparency = 1
-	page.BorderSizePixel = 0
-	page.Position = UDim2.new(0, 110, 0, 0)
-	page.Size = UDim2.new(1, -110, 1, 0)
-	page.Visible = false
-	page.ScrollBarThickness = 6
-	page.ScrollBarImageColor3 = Color3.fromRGB(0,200,255)
+	page.Name = name; page.BackgroundTransparency = 1; page.BorderSizePixel = 0
+	page.Position = UDim2.new(0, 110, 0, 0); page.Size = UDim2.new(1, -110, 1, 0)
+	page.Visible = false; page.ScrollBarThickness = 6; page.ScrollBarImageColor3 = Color3.fromRGB(0,200,255)
 	return page
 end
 local HomePage = createPage("Home")
-local GamePage = createPage("Game")
-GamePage.CanvasSize = UDim2.new(0, 0, 1.85, 0)
-local TargetPage = createPage("Target")
-TargetPage.CanvasSize = UDim2.new(0, 0, 1.25, 0)
-local MiscPage = createPage("Misc")
-MiscPage.CanvasSize = UDim2.new(0, 0, 1.1, 0)
+local GamePage = createPage("Game"); GamePage.CanvasSize = UDim2.new(0, 0, 1.85, 0)
+local TargetPage = createPage("Target"); TargetPage.CanvasSize = UDim2.new(0, 0, 1.25, 0)
+local MiscPage = createPage("Misc"); MiscPage.CanvasSize = UDim2.new(0, 0, 1.1, 0)
 local LangPage = createPage("Lang")
 
 local function switchTo(btn)
@@ -277,7 +224,6 @@ end)
 
 CloseButton.MouseButton1Click:Connect(function() NEXUS:Destroy() end)
 
--- Обновление текстов при смене языка
 local function refreshAllTexts()
 	TitleLabel.Text = T("title")
 	HomeBtn.Text = T("home"); GameBtn.Text = T("game"); TargetBtn.Text = T("target"); MiscBtn.Text = T("misc"); LangBtn.Text = T("lang")
@@ -301,41 +247,28 @@ end
 
 -- HOME
 local ProfileImage = Instance.new("ImageLabel", HomePage)
-ProfileImage.BackgroundColor3 = Color3.fromRGB(30,30,55)
-ProfileImage.Position = UDim2.new(0, 10, 0, 10)
-ProfileImage.Size = UDim2.new(0, 80, 0, 80)
-Instance.new("UICorner", ProfileImage).CornerRadius = UDim.new(1,0)
+ProfileImage.BackgroundColor3 = Color3.fromRGB(30,30,55); ProfileImage.Position = UDim2.new(0, 10, 0, 10)
+ProfileImage.Size = UDim2.new(0, 80, 0, 80); Instance.new("UICorner", ProfileImage).CornerRadius = UDim.new(1,0)
 pcall(function() ProfileImage.Image = Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420) end)
 
 local WelcomeLabel = Instance.new("TextLabel", HomePage)
-WelcomeLabel.BackgroundTransparency = 1
-WelcomeLabel.Position = UDim2.new(0, 100, 0, 10)
-WelcomeLabel.Size = UDim2.new(0, 270, 0, 80)
-WelcomeLabel.Font = Enum.Font.GothamBold
-WelcomeLabel.Text = T("welcome")
-WelcomeLabel.TextColor3 = Color3.fromRGB(220,220,255)
-WelcomeLabel.TextSize = 20
-WelcomeLabel.TextWrapped = true
+WelcomeLabel.BackgroundTransparency = 1; WelcomeLabel.Position = UDim2.new(0, 100, 0, 10)
+WelcomeLabel.Size = UDim2.new(0, 270, 0, 80); WelcomeLabel.Font = Enum.Font.GothamBold
+WelcomeLabel.Text = T("welcome"); WelcomeLabel.TextColor3 = Color3.fromRGB(220,220,255); WelcomeLabel.TextSize = 20; WelcomeLabel.TextWrapped = true
 WelcomeLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Универсальная кнопка
 local function addButton(parent, key, y, isToggle, callback)
 	local btn = Instance.new("TextButton", parent)
 	btn:SetAttribute("langKey", key)
-	btn.Size = UDim2.new(0.9, 0, 0, 38)
-	btn.Position = UDim2.new(0.05, 0, 0, y)
-	btn.BackgroundColor3 = Color3.fromRGB(40,40,70)
-	btn.TextColor3 = Color3.fromRGB(220,220,255)
-	btn.Font = Enum.Font.GothamBold
-	btn.Text = T(key)
-	btn.TextSize = 15
+	btn.Size = UDim2.new(0.9, 0, 0, 38); btn.Position = UDim2.new(0.05, 0, 0, y)
+	btn.BackgroundColor3 = Color3.fromRGB(40,40,70); btn.TextColor3 = Color3.fromRGB(220,220,255)
+	btn.Font = Enum.Font.GothamBold; btn.Text = T(key); btn.TextSize = 15
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
 	if isToggle then
 		local indicator = Instance.new("Frame", btn)
-		indicator.Size = UDim2.new(0, 20, 0, 20)
-		indicator.Position = UDim2.new(1, -30, 0.5, -10)
-		indicator.BackgroundColor3 = Color3.fromRGB(255,0,0)
-		Instance.new("UICorner", indicator).CornerRadius = UDim.new(1,0)
+		indicator.Size = UDim2.new(0, 20, 0, 20); indicator.Position = UDim2.new(1, -30, 0.5, -10)
+		indicator.BackgroundColor3 = Color3.fromRGB(255,0,0); Instance.new("UICorner", indicator).CornerRadius = UDim.new(1,0)
 		btn.MouseButton1Click:Connect(function()
 			if indicator.BackgroundColor3 == Color3.fromRGB(255,0,0) then
 				indicator.BackgroundColor3 = Color3.fromRGB(0,255,150)
@@ -351,7 +284,7 @@ local function addButton(parent, key, y, isToggle, callback)
 	return btn
 end
 
--- GAME (все кнопки, как раньше)
+-- GAME
 local antiRagdollConn
 addButton(GamePage, "anti_ragdoll", 10, true, function(on) if on then ToggleRagdoll(true); antiRagdollConn = GetRoot(plr).ChildAdded:Connect(function(f) if f.Name == "PushForce" then f.MaxForce = Vector3.zero; f.Velocity = Vector3.zero end end) else ToggleRagdoll(false); if antiRagdollConn then antiRagdollConn:Disconnect() end end end)
 
@@ -394,51 +327,33 @@ for _, tp in ipairs(tpList) do
 end
 
 local cmdBar = Instance.new("TextBox", GamePage)
-cmdBar.Size = UDim2.new(0.9, 0, 0, 35)
-cmdBar.Position = UDim2.new(0.05, 0, 0, tpY+10)
-cmdBar.BackgroundColor3 = Color3.fromRGB(30,30,55)
-cmdBar.TextColor3 = Color3.fromRGB(220,220,255)
-cmdBar.PlaceholderText = T("cmd_bar")
-cmdBar.Font = Enum.Font.Gotham
-cmdBar.TextSize = 14
+cmdBar.Size = UDim2.new(0.9, 0, 0, 35); cmdBar.Position = UDim2.new(0.05, 0, 0, tpY+10)
+cmdBar.BackgroundColor3 = Color3.fromRGB(30,30,55); cmdBar.TextColor3 = Color3.fromRGB(220,220,255)
+cmdBar.PlaceholderText = T("cmd_bar"); cmdBar.Font = Enum.Font.Gotham; cmdBar.TextSize = 14
 cmdBar.FocusLost:Connect(function() local c = cmdBar.Text; Players:Chat(c); SendNotify("NEXUS-SYSTEM", T("notification_executed")..c, 5); cmdBar.Text = "" end)
 
--- TARGET (исправленный, идентично предыдущей версии)
+-- TARGET
 local TargetImage = Instance.new("ImageLabel", TargetPage)
-TargetImage.BackgroundColor3 = Color3.fromRGB(30,30,55)
-TargetImage.BorderColor3 = Color3.fromRGB(0,255,150)
-TargetImage.Position = UDim2.new(0, 25, 0, 25)
-TargetImage.Size = UDim2.new(0, 100, 0, 100)
-TargetImage.Image = "rbxassetid://10818605405"
-Instance.new("UICorner", TargetImage).CornerRadius = UDim.new(0,12)
+TargetImage.BackgroundColor3 = Color3.fromRGB(30,30,55); TargetImage.BorderColor3 = Color3.fromRGB(0,255,150)
+TargetImage.Position = UDim2.new(0, 25, 0, 25); TargetImage.Size = UDim2.new(0, 100, 0, 100)
+TargetImage.Image = "rbxassetid://10818605405"; Instance.new("UICorner", TargetImage).CornerRadius = UDim.new(0,12)
 
 local TargetNameInput = Instance.new("TextBox", TargetPage)
-TargetNameInput.BackgroundColor3 = Color3.fromRGB(30,30,55)
-TargetNameInput.BorderColor3 = Color3.fromRGB(0,255,150)
-TargetNameInput.Position = UDim2.new(0, 150, 0, 30)
-TargetNameInput.Size = UDim2.new(0, 175, 0, 30)
-TargetNameInput.Font = Enum.Font.Gotham
-TargetNameInput.PlaceholderText = T("target_placeholder")
-TargetNameInput.TextColor3 = Color3.fromRGB(220,220,255)
-TargetNameInput.TextSize = 14
+TargetNameInput.BackgroundColor3 = Color3.fromRGB(30,30,55); TargetNameInput.BorderColor3 = Color3.fromRGB(0,255,150)
+TargetNameInput.Position = UDim2.new(0, 150, 0, 30); TargetNameInput.Size = UDim2.new(0, 175, 0, 30)
+TargetNameInput.Font = Enum.Font.Gotham; TargetNameInput.PlaceholderText = T("target_placeholder")
+TargetNameInput.TextColor3 = Color3.fromRGB(220,220,255); TargetNameInput.TextSize = 14
 Instance.new("UICorner", TargetNameInput).CornerRadius = UDim.new(0,8)
 
 local ClickTargetBtn = Instance.new("ImageButton", TargetNameInput)
-ClickTargetBtn.BackgroundTransparency = 1
-ClickTargetBtn.Position = UDim2.new(0, 180, 0, 0)
-ClickTargetBtn.Size = UDim2.new(0, 30, 0, 30)
-ClickTargetBtn.Image = "rbxassetid://2716591855"
+ClickTargetBtn.BackgroundTransparency = 1; ClickTargetBtn.Position = UDim2.new(0, 180, 0, 0)
+ClickTargetBtn.Size = UDim2.new(0, 30, 0, 30); ClickTargetBtn.Image = "rbxassetid://2716591855"
 
 local UserIDLabel = Instance.new("TextLabel", TargetPage)
-UserIDLabel.BackgroundTransparency = 1
-UserIDLabel.Position = UDim2.new(0, 150, 0, 70)
-UserIDLabel.Size = UDim2.new(0, 280, 0, 75)
-UserIDLabel.Font = Enum.Font.GothamBold
-UserIDLabel.Text = T("userid_label")
-UserIDLabel.TextColor3 = Color3.fromRGB(0,255,150)
-UserIDLabel.TextSize = 18
-UserIDLabel.TextXAlignment = Enum.TextXAlignment.Left
-UserIDLabel.TextYAlignment = Enum.TextYAlignment.Top
+UserIDLabel.BackgroundTransparency = 1; UserIDLabel.Position = UDim2.new(0, 150, 0, 70)
+UserIDLabel.Size = UDim2.new(0, 280, 0, 75); UserIDLabel.Font = Enum.Font.GothamBold
+UserIDLabel.Text = T("userid_label"); UserIDLabel.TextColor3 = Color3.fromRGB(0,255,150); UserIDLabel.TextSize = 18
+UserIDLabel.TextXAlignment = Enum.TextXAlignment.Left; UserIDLabel.TextYAlignment = Enum.TextYAlignment.Top
 
 local targetTasks = {}
 local function stopTargetTask(key)
@@ -450,20 +365,14 @@ end
 local function addTargetToggle(key, y, x, w, h, onActivate, onDeactivate)
 	local btn = Instance.new("TextButton", TargetPage)
 	btn:SetAttribute("langKey", key)
-	btn.Size = UDim2.new(0, w, 0, h)
-	btn.Position = UDim2.new(0, x, 0, y)
-	btn.Text = T(key)
-	btn.BackgroundColor3 = Color3.fromRGB(55,55,95)
-	btn.TextColor3 = Color3.fromRGB(220,220,255)
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 13
+	btn.Size = UDim2.new(0, w, 0, h); btn.Position = UDim2.new(0, x, 0, y)
+	btn.Text = T(key); btn.BackgroundColor3 = Color3.fromRGB(55,55,95)
+	btn.TextColor3 = Color3.fromRGB(220,220,255); btn.Font = Enum.Font.GothamBold; btn.TextSize = 13
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
 	local active = false
 	local indicator = Instance.new("Frame", btn)
-	indicator.Size = UDim2.new(0, 15, 0, 15)
-	indicator.Position = UDim2.new(1, -20, 0.5, -7)
-	indicator.BackgroundColor3 = Color3.fromRGB(255,0,0)
-	Instance.new("UICorner", indicator).CornerRadius = UDim.new(1,0)
+	indicator.Size = UDim2.new(0, 15, 0, 15); indicator.Position = UDim2.new(1, -20, 0.5, -7)
+	indicator.BackgroundColor3 = Color3.fromRGB(255,0,0); Instance.new("UICorner", indicator).CornerRadius = UDim.new(1,0)
 	btn.MouseButton1Click:Connect(function()
 		active = not active
 		if active then
@@ -482,7 +391,6 @@ local function addTargetToggle(key, y, x, w, h, onActivate, onDeactivate)
 	return btn
 end
 
--- View, Fling, Focus, Bang, Headsit, Stand, Backpack, Doggy, Drag (полные функции)
 addTargetToggle("target_view", 150, 25, 150, 30,
 	function(btn)
 		if not TargetedPlayer then return end
@@ -495,11 +403,11 @@ addTargetToggle("target_view", 150, 25, 150, 30,
 	function(btn) workspace.CurrentCamera.CameraSubject = plr.Character.Humanoid; btn.Text = T("target_view") end
 )
 
+-- ИСПРАВЛЕННЫЙ FLING (из System Broken)
 addTargetToggle("target_fling", 150, 210, 150, 30,
 	function(btn)
 		if not TargetedPlayer then return end
-		local oldPos = GetRoot(plr).Position
-		targetTasks["target_fling_pos"] = oldPos
+		targetTasks["target_fling_pos"] = GetRoot(plr).Position
 		targetTasks["target_fling"] = task.spawn(function()
 			while true do
 				local rv = GetRoot(plr).Velocity
@@ -678,13 +586,9 @@ addTargetToggle("target_drag", 350, 25, 150, 30,
 local function addTargetAction(key, y, x, w, h, callback)
 	local btn = Instance.new("TextButton", TargetPage)
 	btn:SetAttribute("langKey", key)
-	btn.Size = UDim2.new(0, w, 0, h)
-	btn.Position = UDim2.new(0, x, 0, y)
-	btn.Text = T(key)
-	btn.BackgroundColor3 = Color3.fromRGB(55,55,95)
-	btn.TextColor3 = Color3.fromRGB(220,220,255)
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 13
+	btn.Size = UDim2.new(0, w, 0, h); btn.Position = UDim2.new(0, x, 0, y)
+	btn.Text = T(key); btn.BackgroundColor3 = Color3.fromRGB(55,55,95)
+	btn.TextColor3 = Color3.fromRGB(220,220,255); btn.Font = Enum.Font.GothamBold; btn.TextSize = 13
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
 	btn.MouseButton1Click:Connect(function() callback() end)
 	return btn
@@ -753,7 +657,7 @@ TargetNameInput.FocusLost:Connect(function()
 	UpdateTarget(target)
 end)
 
--- MISC (без изменений)
+-- MISC
 addButton(MiscPage, "misc_anti_fling", 10, true, function(on) _G.AntiFlingToggled = on; if on then loadstring(game:HttpGet('https://raw.githubusercontent.com/H20CalibreYT/SystemBroken/main/AntiFling'))() end end)
 addButton(MiscPage, "misc_anti_chat", 55, true, function(on) if on then task.spawn(function() while ContentContainer.Visible do Players:Chat(RandomChar()); task.wait() end end) end end)
 local antiAFKConn
@@ -768,22 +672,15 @@ addButton(MiscPage, "misc_serverhop", 415, false, function() if httprequest then
 addButton(MiscPage, "misc_explode", 460, false, function() ToggleRagdoll(false); task.wait(); plr.Character.Humanoid:ChangeState(0); local bav = Instance.new("BodyAngularVelocity", GetRoot(plr)); bav.Name = "Spin"; bav.MaxTorque = Vector3.new(0,math.huge,0); bav.AngularVelocity = Vector3.new(0,150,0); task.wait(3); plr.Character.Humanoid:ChangeState(15) end)
 addButton(MiscPage, "misc_emotes", 505, false, function() if not FreeEmotesEnabled then FreeEmotesEnabled = true; SendNotify("NEXUS-SYSTEM", T("notification_emotes"), 7); loadstring(game:HttpGet("https://raw.githubusercontent.com/H20CalibreYT/SystemBroken/main/AllEmotes"))() end end)
 
--- LANG (без изменений)
+-- LANG
 local function addLangButton(key, y, langCode)
 	local btn = Instance.new("TextButton", LangPage)
 	btn:SetAttribute("langKey", key)
-	btn.Size = UDim2.new(0.8, 0, 0, 50)
-	btn.Position = UDim2.new(0.1, 0, 0, y)
-	btn.BackgroundColor3 = Color3.fromRGB(45,45,75)
-	btn.TextColor3 = Color3.fromRGB(220,220,255)
-	btn.Font = Enum.Font.GothamBold
-	btn.Text = T(key)
-	btn.TextSize = 18
+	btn.Size = UDim2.new(0.8, 0, 0, 50); btn.Position = UDim2.new(0.1, 0, 0, y)
+	btn.BackgroundColor3 = Color3.fromRGB(45,45,75); btn.TextColor3 = Color3.fromRGB(220,220,255)
+	btn.Font = Enum.Font.GothamBold; btn.Text = T(key); btn.TextSize = 18
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,12)
-	btn.MouseButton1Click:Connect(function()
-		lang = langCode
-		refreshAllTexts()
-	end)
+	btn.MouseButton1Click:Connect(function() lang = langCode; refreshAllTexts() end)
 end
 addLangButton("lang_en", 10, "EN")
 addLangButton("lang_ru", 70, "RU")
